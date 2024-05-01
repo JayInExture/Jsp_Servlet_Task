@@ -31,6 +31,7 @@
                 <div>
                     <label for="First_name" class="form-label">First Name:-</label>
                     <input type="text" id="First_name" name="First_name" class="form-control " required>
+
                 </div>
                  <div>
                     <label for="Last_name" class="form-label">Last Name:-</label>
@@ -53,7 +54,6 @@
                   <div id="dob_container">
                   <label class="form-label" for="dob">Date of Birth:-</label>
                   <input class="form-control" type="date" id="dob" name="dob" required>
-                  <span id="dob_error"></span>
                   </div>
 
                  <div>
@@ -64,7 +64,6 @@
                  <label><input type="radio" name="country" value="Canada">Canada</label>
                  <label><input type="radio" name="country" value="other">Other..</label>
                  </div>
-                 <span id="country_error"></span>
                  </div>
                  <div>
                  <label class="form-label">Interests:-</label><br>
@@ -74,16 +73,15 @@
                  <label><input type="checkbox" name="interests" value="travel">Travel</label>
                  <label><input type="checkbox" name="interests" value="other">Other..</label>
                  </div>
-                 <span id="interests_error"></span>
                  </div>
 
                 <div>
                     <label  class="form-label"  for="name" class="form-label">Address:-</label>
                     <div class="address-field">
-                        <input class="form-control" type="text" name="street" placeholder="Street">
-                        <input class="form-control" type="text" name="city" placeholder="City">
-                        <input class="form-control" type="text" name="zip" placeholder="Zip">
-                        <input class="form-control" type="text" name="state" placeholder="State">
+                        <input class="form-control" type="text" name="street" placeholder="Street" required>
+                        <input class="form-control" type="text" name="city" placeholder="City" required>
+                        <input class="form-control" type="text" name="zip" placeholder="Zip" required>
+                        <input class="form-control" type="text" name="state" placeholder="State" required>
                         <button class="btn btn-danger delete-address" type="button">Delete</button>
                     </div>
 

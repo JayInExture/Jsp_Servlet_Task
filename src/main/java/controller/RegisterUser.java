@@ -12,9 +12,11 @@ import model.Address;
 import model.userData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import util.impl.UserValidationImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @WebServlet("/register")
@@ -32,35 +34,74 @@ public class RegisterUser extends HttpServlet {
         String userType = req.getParameter("userType"); // Retrieve user type from request parameters
         String dob = req.getParameter("dob");
         String country = req.getParameter("country");
-        String interests = req.getParameter("interests");
-
-        Log.info(dob,country,interests);
-
-
-        String alphaExp = "^[a-zA-Z ]*$";
-        if (!firstName.matches(alphaExp)) {
-            req.setAttribute("errorMessage", "First name must contain only alphabetic characters.");
-            resp.sendRedirect("index.jsp");
-        Log.info(req.getAttribute("errorMessage"));
-//            resp.sendRedirect("index.jsp?errorMessage=First name must contain only alphabetic characters.");
-            return;
+        String[] interestsArray = req.getParameterValues("interests");
+        List<String> interestsList = new ArrayList<>();
+        if (interestsArray != null) {
+            interestsList.addAll(Arrays.asList(interestsArray));
         }
 
-        if (!lastName.matches(alphaExp)) {
-            req.setAttribute("errorMessage", "Last name must contain only alphabetic characters.");
-            resp.sendRedirect("index.jsp");
-            return;
-        }
+        UserValidationImpl validation = new UserValidationImpl();
 
-        if((password.length() <=7)){
-            resp.sendRedirect("index.jsp?error=passwordlengthTosort");
+        // Perform validation checks
+        if (!validation.isValidName(firstName)) {
+            resp.sendRedirect("index.jsp?error=invalidFirstName");
             return;
         }
-        // Check if passwords match
-        if (!password.equals(confirmPassword)) {
+        if (!validation.isValidName(lastName)) {
+            resp.sendRedirect("index.jsp?error=invalidLastName");
+            return;
+        }
+        if (!validation.isValidEmail(email)) {
+            resp.sendRedirect("index.jsp?error=invalidEmail");
+            return;
+        }
+        if (!validation.isPasswordValid(password)) {
+            resp.sendRedirect("index.jsp?error=invalidPassword");
+            return;
+        }
+        if (!validation.doPasswordsMatch(password, confirmPassword)) {
             resp.sendRedirect("index.jsp?error=passwordMismatch");
-            return; // Stop further processing
+            return;
         }
+        if (!validation.isValidDateOfBirth(dob)) {
+            resp.sendRedirect("index.jsp?error=SeletDob");
+            return;
+        }
+
+        if (!validation.isValidCountry(country)){
+            resp.sendRedirect("index.jsp?error=SelectCountry");
+            return;
+        }
+        if (!validation.isValidInterests(interestsList)){
+            resp.sendRedirect("index.jsp?error=SelectInterests");
+            return;
+        }
+
+
+//        String alphaExp = "^[a-zA-Z ]*$";
+//        if (!firstName.matches(alphaExp)) {
+//            req.setAttribute("errorMessage", "First name must contain only alphabetic characters.");
+//            resp.sendRedirect("index.jsp");
+//        Log.info(req.getAttribute("errorMessage"));
+////            resp.sendRedirect("index.jsp?errorMessage=First name must contain only alphabetic characters.");
+//            return;
+//        }
+//
+//        if (!lastName.matches(alphaExp)) {
+//            req.setAttribute("errorMessage", "Last name must contain only alphabetic characters.");
+//            resp.sendRedirect("index.jsp");
+//            return;
+//        }
+//
+//        if((password.length() <=7)){
+//            resp.sendRedirect("index.jsp?error=passwordlengthTosort");
+//            return;
+//        }
+//        // Check if passwords match
+//        if (!password.equals(confirmPassword)) {
+//            resp.sendRedirect("index.jsp?error=passwordMismatch");
+//            return; // Stop further processing
+//        }
 
         List<Address> addresses = new ArrayList<>();
 
@@ -69,15 +110,11 @@ public class RegisterUser extends HttpServlet {
         String[] cities = req.getParameterValues("city");
         String[] zips = req.getParameterValues("zip");
         String[] states = req.getParameterValues("state");
-//        if (streets == null || cities == null || zips == null || states == null) {
-//            resp.sendRedirect("index.jsp?error=missingAddressFields");
-//            return; // Stop further processing
-//        }
-//
-//        if (streets.length != cities.length || streets.length != zips.length || streets.length != states.length) {
-//            resp.sendRedirect("index.jsp?error=invalidAddressFields");
-//            return; // Stop further processing
-//        }
+
+        if (!validation.isValidAddress(streets,cities,zips,states)){
+            resp.sendRedirect("index.jsp?error=invalidAddressFiled");
+            return;
+        }
 
         for (int i = 0; i < streets.length; i++) {
             String street = streets[i];
@@ -99,7 +136,7 @@ public class RegisterUser extends HttpServlet {
         user.setUserType(userType);// Set user type
         user.setDateOfBirth(dob); // Set date of birth
         user.setCountry(country); // Set country
-        user.setInterests(interests);
+        user.setInterests(interestsList);
         user.setAddresses(addresses); // Set addresses
 
         // Save the user only if passwords match
@@ -125,7 +162,7 @@ public class RegisterUser extends HttpServlet {
             }
         }
 
-        // If not an admin or no user is logged in, redirect to the login page
+
         resp.sendRedirect("Login.jsp");
     }
 

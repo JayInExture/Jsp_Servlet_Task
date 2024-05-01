@@ -1,5 +1,4 @@
 package services;
-
 import dao.UserDaoInterface;
 import dao.impl.UserDao;
 import jakarta.servlet.*;
@@ -27,12 +26,15 @@ public class editUser extends HttpServlet {
         request.getRequestDispatcher("EditUser.jsp").forward(request, response);
     }
 
-
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String firstName = req.getParameter("First_name");
         String lastName = req.getParameter("Last_name");
+        String DateOfBirth = req.getParameter("dateOfBirth");
+        String country = req.getParameter("country");
+        String[] interestsArray = req.getParameterValues("interests");
+        // Convert interests array to a list
+        List<String> interests = interestsArray != null ? Arrays.asList(interestsArray) : new ArrayList<>();
         int userId = Integer.parseInt(req.getParameter("id"));
         List<Address> addresses = new ArrayList<>();
 
@@ -60,31 +62,21 @@ public class editUser extends HttpServlet {
         }
 
         UserDaoInterface userDao = new UserDao();
-        userData user = userDao.upDateInfo(userId, firstName, lastName, addresses);
-
-        // Redirect to a confirmation page or user details page
-        List<userData> users = userDao.getAllUsers();
-        req.getSession().setAttribute("users", users);
+        userData user = userDao.upDateInfo(userId, firstName, lastName, addresses,DateOfBirth,country,interests);
+        HttpSession session = req.getSession(false);
+        log.error(session.getAttribute("user"));
+        if (session != null) {
+            userData loggedInUser = (userData) session.getAttribute("user");
+            if (loggedInUser.getUserType().equals("admin")){
+                List<userData> users = userDao.getAllUsers();
+                session.setAttribute("users", users);
+            }else {
+            userData updatedUser = userDao.getUserById(userId); // Fetch the updated user from the database
+            session.setAttribute("user", updatedUser); }// Update the user object in the session
+        }
         resp.sendRedirect("Dashboard.jsp?id=" + user.getId());
     }
 
 
 }
 
-
-// Retrieve existing addresses from the form
-//        String[] existingStreet = req.getParameterValues("existingStreet");
-//        String[] existingCity = req.getParameterValues("existingCity");
-//        String[] existingZip = req.getParameterValues("existingZip");
-//        String[] existingState = req.getParameterValues("existingState");
-//
-//        if (existingStreet != null && existingCity != null && existingZip != null && existingState != null) {
-//            for (int i = 0; i < existingStreet.length; i++) {
-//                Address address = new Address();
-//                address.setStreet(existingStreet[i]);
-//                address.setCity(existingCity[i]);
-//                address.setZip(existingZip[i]);
-//                address.setState(existingState[i]);
-//                addresses.add(address);
-//            }
-//        }

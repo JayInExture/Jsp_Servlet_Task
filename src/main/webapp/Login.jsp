@@ -13,9 +13,9 @@
 <h3>Login</h3>
     <form action="login" method="post">
         <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br>
+        <input type="email" id="email" name="email" autocomplete="off" required><br>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br>
+        <input type="password" id="password" name="password" autocomplete="off" required><br>
 
 
         <button class="login_btn" type="submit">Login</button>

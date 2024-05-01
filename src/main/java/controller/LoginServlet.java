@@ -39,7 +39,8 @@ public class LoginServlet extends HttpServlet {
                     request.setAttribute("users", users);
                 }
                 // Forward the request to Dashboard.jsp
-                request.getRequestDispatcher("Dashboard.jsp").forward(request, response);
+                response.sendRedirect("Dashboard.jsp");
+//                request.getRequestDispatcher("Dashboard.jsp").forward(request, response);
             }
             else {
                 log.info("Invalid credentials for email: {}", email);

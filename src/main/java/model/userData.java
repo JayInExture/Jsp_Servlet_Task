@@ -1,5 +1,6 @@
 package model;
 
+import java.util.Date;
 import java.util.List;
 
 public class userData {
@@ -12,7 +13,7 @@ public class userData {
     private String password;
     private String dateOfBirth;
     private String country;
-    private String interests;
+    private List<String> interests;
 
     private List<Address> addresses;
     private String userType;
@@ -44,12 +45,16 @@ public class userData {
 
 
 
-    public userData(int id, String firstName, String lastName,String email, String password) {
+    public userData(int id, String firstName, String lastName, String email, String password, Date dateOfBirth, String country, List<String> interests, String userType) {
             this.id = id;
             this.firstName = firstName;
             this.lastName = lastName;
             this.email = email;
             this.password = password;
+            this.dateOfBirth = String.valueOf(dateOfBirth);
+            this.country = country;
+            this.interests = interests;
+            this.userType = userType;
         }
 
     public userData() {
@@ -128,13 +133,20 @@ public class userData {
         this.country = country;
     }
 
-    public String getInterests() {
+    public List<String> getInterests() {
         return interests;
     }
 
-    public void setInterests(String interests) {
+    public void setInterests(List<String> interests) {
         this.interests = interests;
     }
+//    public String getInterests() {
+//        return interests;
+//    }
+//
+//    public void setInterests(String interests) {
+//        this.interests = interests;
+//    }
 
 //    public int getAddressId() {
 //        return addressId;

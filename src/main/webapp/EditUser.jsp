@@ -31,6 +31,24 @@
         <label class="form-label" for="email">Email:-</label>
         <input class="form-control" type="email" id="email" name="email" value="${user.email}" readonly>
       </div>
+        <div>
+            <label class="form-label" for="dateOfBirth">Date of Birth:-</label>
+            <input class="form-control" type="date" id="dateOfBirth" name="dateOfBirth" value="${user.dateOfBirth}">
+        </div>
+        <label class="form-label">Country:-</label>
+        <div class="countries">
+            <label><input type="radio" name="country" value="india" ${user.country eq 'india' ? 'checked' : ''}>India</label>
+            <label><input type="radio" name="country" value="USA" ${user.country eq 'USA' ? 'checked' : ''}>USA</label>
+            <label><input type="radio" name="country" value="Canada" ${user.country eq 'Canada' ? 'checked' : ''}>Canada</label>
+            <label><input type="radio" name="country" value="other" ${user.country eq 'other' ? 'checked' : ''}>Other..</label>
+        </div>
+        <label class="form-label">Interests:-</label>
+        <div class="interests">
+            <label><input type="checkbox" name="interests" value="sports" ${user.interests.contains('sports') ? 'checked' : ''}>Sports</label>
+            <label><input type="checkbox" name="interests" value="music" ${user.interests.contains('music') ? 'checked' : ''}>Music</label>
+            <label><input type="checkbox" name="interests" value="travel" ${user.interests.contains('travel') ? 'checked' : ''}>Travel</label>
+            <label><input type="checkbox" name="interests" value="other" ${user.interests.contains('other') ? 'checked' : ''}>Other..</label>
+        </div>
 
       <h4>Addresses:</h4>
       <div id="address-fields">
@@ -81,6 +99,7 @@
                     <br>
           </div>`;
         $('#address-fields').append(newAddressField);
+        updateDeleteButtons();
       });
        $(document).on("click", ".delete-address", function() {
           if ($(".address-field").length === 1) {
@@ -88,7 +107,12 @@
                       return;
                   }
              $(this).closest('.address-field').remove();
+             updateDeleteButtons();
            });
+            function updateDeleteButtons() {
+                $(".delete-address").toggle($(".address-field").length > 1);
+                }
+            updateDeleteButtons();
     });
   </script>
   <jsp:include page="Footer.jsp"></jsp:include>

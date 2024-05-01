@@ -27,8 +27,22 @@ public class AuthenticationFilter implements Filter {
         HttpSession session = httpRequest.getSession(false);
 
         if (session != null && session.getAttribute("user") != null) {
+            // User is logged in, allow access to the requested page
+
+            // Prevent caching of sensitive pages
+            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+            httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0
+            httpResponse.setHeader("Expires", "0"); // Proxies
+
             chain.doFilter(request, response);
         } else {
+            // User is not logged in, redirect to the login page
+
+            // Prevent caching of the login page
+            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+            httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0
+            httpResponse.setHeader("Expires", "0"); // Proxies
+
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/Login.jsp?error=unauthorized");
         }
     }

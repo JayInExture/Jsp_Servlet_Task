@@ -19,7 +19,7 @@ public interface UserDaoInterface {
 
     userData getUserById(int userId);
 
-    userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses);
+    userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses, String DateOfBirth,String country,  List<String> interests);
 
 
     boolean deleteUser(int userId);

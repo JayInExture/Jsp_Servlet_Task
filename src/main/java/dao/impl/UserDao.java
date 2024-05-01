@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.sql.Connection;
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 
@@ -34,7 +35,8 @@ public class UserDao implements UserDaoInterface {
                 userStatement.setString(5, user.getUserType());
                 userStatement.setString(6, user.getDateOfBirth()); // Insert date of birth
                 userStatement.setString(7, user.getCountry()); // Insert country
-                userStatement.setString(8, user.getInterests()); // Insert interests
+                String interestsString = String.join(",", user.getInterests());
+                userStatement.setString(8, interestsString); // Insert interests
                 userStatement.executeUpdate();
 
                 // Retrieve the auto-generated user ID
@@ -74,10 +76,6 @@ public class UserDao implements UserDaoInterface {
                     "FROM Users u LEFT JOIN Addresses a ON u.id = a.user_id " +
                     "WHERE u.email=? AND u.password=?";
 
-//            String query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.user_type, u.date_of_birth, u.country " +
-//                    "a.id as address_id, a.street, a.city, a.zip, a.state " +
-//                    "FROM Users u LEFT JOIN Addresses a ON u.id = a.user_id " +
-//                    "WHERE u.email=? AND u.password=?";
             try (PreparedStatement statement = connection.prepareStatement(query)) {
                 statement.setString(1, email);
                 statement.setString(2, password);
@@ -153,6 +151,7 @@ public class UserDao implements UserDaoInterface {
     public List<userData> getAllUsers() {
         List<userData> users = new ArrayList<>();
         String query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.user_type, " +
+                "u.date_of_birth, u.country, " +
                 "a.id as address_id, a.street, a.city, a.zip, a.state " +
                 "FROM Users u LEFT JOIN Addresses a ON u.id = a.user_id";
 
@@ -176,6 +175,10 @@ public class UserDao implements UserDaoInterface {
                     user.setEmail(resultSet.getString("email"));
                     user.setPassword(resultSet.getString("password"));
                     user.setUserType(resultSet.getString("user_type"));
+                    // Retrieve additional fields
+                    user.setDateOfBirth(String.valueOf(resultSet.getDate("date_of_birth")));
+                    user.setCountry(resultSet.getString("country"));
+//                    user.setInterests(resultSet.getString("interests"));
 
                     // Initialize addresses list
                     user.setAddresses(new ArrayList<>());
@@ -216,6 +219,7 @@ public class UserDao implements UserDaoInterface {
 
         try {
             String query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.user_type, " +
+                    "u.date_of_birth, u.country,u.interests, " +
                     "a.id as address_id, a.street, a.city, a.zip, a.state " +
                     "FROM Users u LEFT JOIN Addresses a ON u.id = a.user_id " +
                     "WHERE u.id=?";
@@ -232,8 +236,17 @@ public class UserDao implements UserDaoInterface {
                     String email = resultSet.getString("email");
                     String password = resultSet.getString("password");
                     String userType = resultSet.getString("user_type");
-                    user = new userData(id, firstName, lastName, email, password, userType);
+                    // Retrieve additional fields
+                    Date dateOfBirth = resultSet.getDate("date_of_birth");
+                    String country = resultSet.getString("country");
+                    String interests = resultSet.getString("interests");
+                    List<String> interestsList = Arrays.asList(interests.split(","));
+
+                    log.info(String.valueOf(dateOfBirth),country,interests);
+                    // Create user object with additional fields
+                    user = new userData(id, firstName, lastName, email, password, dateOfBirth, country,interestsList,userType);
                 }
+
 
                 int addressId = resultSet.getInt("address_id");
                 log.info("Address ID: " + addressId);
@@ -261,7 +274,7 @@ public class UserDao implements UserDaoInterface {
         return user;
     }
 
-    public userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses) {
+    public userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses,String DateOfBirth,String country,  List<String> interests) {
         userData user = getUserById(userId);
 
         if (user != null) {
@@ -269,17 +282,25 @@ public class UserDao implements UserDaoInterface {
                 log.info("Updating user information for user ID: " + userId);
 
                 // Update user's name if changed
-                if (!user.getFirstName().equals(firstName) || !user.getLastName().equals(lastName)) {
-                    log.info("Updating user's name from " + user.getFirstName() + " " + user.getLastName() + " to " + firstName + " " + lastName);
-                    String updateUserQuery = "UPDATE Users SET first_name = ?, last_name = ? WHERE id = ?";
+                if (!user.getFirstName().equals(firstName) || !user.getLastName().equals(lastName) || !user.getDateOfBirth().equals(DateOfBirth) || !user.getCountry().equals(country) || !user.getInterests().equals(interests)) {
+                    log.info("Updating user's name from " + user.getFirstName() + " " + user.getLastName() + " to " + firstName + " " + lastName,country, DateOfBirth, interests);
+                    String updateUserQuery = "UPDATE Users SET first_name = ?, last_name = ?, date_of_birth = ?, country = ?, interests = ? WHERE id = ?";
                     try (PreparedStatement updateUserStatement = connection.prepareStatement(updateUserQuery)) {
                         updateUserStatement.setString(1, firstName);
                         updateUserStatement.setString(2, lastName);
-                        updateUserStatement.setInt(3, userId);
+                        updateUserStatement.setString(3, DateOfBirth);
+                        updateUserStatement.setString(4, country);
+                        String interestsString = String.join(",", interests);
+                        updateUserStatement.setString(5, interestsString);
+
+                        updateUserStatement.setInt(6, userId);
                         updateUserStatement.executeUpdate();
                     }
                     user.setFirstName(firstName);
                     user.setLastName(lastName);
+                    user.setDateOfBirth(DateOfBirth);
+                    user.setCountry(country);
+                    user.setInterests(interests);
                 }
 
                 // Update existing addresses and add new ones
@@ -335,84 +356,7 @@ public class UserDao implements UserDaoInterface {
         }
         return user;
     }
-
-
-
-
-//    public userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses) {
-//        userData user = getUserById(userId);
-//
-//        if (user != null) {
-//            try {
-//                // Update user's name if changed
-//                // Update existing addresses and add new ones
-//                for (Address address : addresses) {
-//                    if (address.getId() != 0) {
-//                        // Update existing address
-//                        String updateQuery = "UPDATE Addresses SET street=?, city=?, zip=?, state=? WHERE id=?";
-//                        try (PreparedStatement updateStatement = connection.prepareStatement(updateQuery)) {
-//                            updateStatement.setString(1, address.getStreet());
-//                            updateStatement.setString(2, address.getCity());
-//                            updateStatement.setString(3, address.getZip());
-//                            updateStatement.setString(4, address.getState());
-//                            updateStatement.setInt(5, address.getId());
-//                            updateStatement.executeUpdate();
-//                        }
-//                    } else {
-//                        // Add new address
-//                        String insertQuery = "INSERT INTO Addresses (user_id, street, city, zip, state) VALUES (?, ?, ?, ?, ?)";
-//                        try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
-//                            insertStatement.setInt(1, userId);
-//                            insertStatement.setString(2, address.getStreet());
-//                            insertStatement.setString(3, address.getCity());
-//                            insertStatement.setString(4, address.getZip());
-//                            insertStatement.setString(5, address.getState());
-//                            insertStatement.executeUpdate();
-//
-//                            ResultSet generatedKeys = insertStatement.getGeneratedKeys();
-//                            if (generatedKeys.next()) {
-//                                int generatedId = generatedKeys.getInt(1);
-//                                address.setId(generatedId);
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                // Delete removed addresses
-//                String deleteQuery = "DELETE FROM Addresses WHERE user_id=? AND id NOT IN (?)";
-//                String addressIds = addresses.stream().map(a -> String.valueOf(a.getId())).collect(Collectors.joining(","));
-//                try (PreparedStatement deleteStatement = connection.prepareStatement(deleteQuery)) {
-//                    deleteStatement.setInt(1, userId);
-//                    deleteStatement.setString(2, addressIds);
-//                    deleteStatement.executeUpdate();
-//                }
-//
-//                // Update user's name if changed
-//                if (!user.getFirstName().equals(firstName) || !user.getLastName().equals(lastName)) {
-//                    String updateUserQuery = "UPDATE Users SET first_name = ?, last_name = ? WHERE id = ?";
-//                    try (PreparedStatement updateUserStatement = connection.prepareStatement(updateUserQuery)) {
-//                        updateUserStatement.setString(1, firstName);
-//                        updateUserStatement.setString(2, lastName);
-//                        updateUserStatement.setInt(3, userId);
-//                        updateUserStatement.executeUpdate();
-//                    }
-//                    user.setFirstName(firstName);
-//                    user.setLastName(lastName);
-//                }
-//            } catch (SQLException e) {
-//                e.printStackTrace();
-//                // Log the SQL exception
-//                log.error("SQL error occurred while updating user info for user " + userId, e);
-//            }
-//        }
-//        return user;
-//    }
-
-
-
-
-
-    public boolean deleteUser(int userId) {
+public boolean deleteUser(int userId) {
         try {
             // Delete user's addresses first
             String deleteAddressesQuery = "DELETE FROM Addresses WHERE user_id = ?";

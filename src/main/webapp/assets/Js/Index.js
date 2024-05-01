@@ -3,6 +3,7 @@ $(document).ready(function() {
         var newAddress = $(".address-field:first").clone();
         newAddress.find("input").val("");
         newAddress.insertAfter(".address-field:last");
+        updateDeleteButtons();
     });
 
     // Event listener for dynamically added delete buttons
@@ -13,5 +14,10 @@ $(document).ready(function() {
             return;
         }
         $(this).closest(".address-field").remove();
+        updateDeleteButtons(); // Call the function to update delete buttons
     });
+    function updateDeleteButtons() {
+        $(".delete-address").toggle($(".address-field").length > 1);
+    }
+    updateDeleteButtons();
 });

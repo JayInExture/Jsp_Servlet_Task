@@ -8,6 +8,7 @@
   <title>Edit User</title>
   <link rel="stylesheet" type="text/css" href="./assets/css/EditInfo.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
   <jsp:include page="Header.jsp"></jsp:include>
@@ -17,7 +18,7 @@
   <section class="Edit_common">
   <div class="Edit_common_form" >
     <h3>Edit User</h3>
-    <form action="editUser" method="post">
+    <form id="edit_user_form" action="editUser" method="post" enctype="multipart/form-data">
      <input type="hidden" name="id" value="${user.id}">
       <div>
         <label for="First_name" class="form-label">First Name:-</label>
@@ -73,48 +74,89 @@
 
       <button type="button" id="add-address">Add Address</button>
       <br>
-      <button class="submit_form" type="submit">
+<h2>Images</h2>
+<c:forEach var="image" items="${user.userImages}">
+    <input  type="hidden" name="existingImageId" value="${image.id}">
+</c:forEach>
+<div id="image-dropzone" class="dropzone">
+
+</div>
+
+<input  type="hidden" id="removedImageIds" name="removedImageIds">
+
+      <button id="submit_form" class="submit_form" type="submit">
         Submit
       </button>
     </form>
     </div>
   </section>
-  <script>
-    $(document).ready(function() {
-      let addressCount = $('#address-fields .address-field').length;
-
-      $('#add-address').click(function() {
-        addressCount++;
-        const newAddressField = `
-          <div class="address-field">
-            <label for="street">Street:</label>
-            <input type="text" name="street" placeholder="Street" required>
-            <label for="city">City:</label>
-            <input type="text" name="city" placeholder="City" required>
-            <label for="zip">ZIP:</label>
-            <input type="text" name="zip" placeholder="Zip" required>
-            <label for="state">State:</label>
-            <input type="text" name="state" placeholder="State" required>
-            <button type="button" class="delete-address" id="delete-address">Delete Address</button>
-                    <br>
-          </div>`;
-        $('#address-fields').append(newAddressField);
-        updateDeleteButtons();
-      });
-       $(document).on("click", ".delete-address", function() {
-          if ($(".address-field").length === 1) {
-                      alert("At least one address component must remain.");
-                      return;
-                  }
-             $(this).closest('.address-field').remove();
-             updateDeleteButtons();
-           });
-            function updateDeleteButtons() {
-                $(".delete-address").toggle($(".address-field").length > 1);
-                }
-            updateDeleteButtons();
-    });
-  </script>
   <jsp:include page="Footer.jsp"></jsp:include>
+ <script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js"></script>
+  <script src="./assets/Js/EditUser.js" type="module" defer></script>
+
+  <script>
+  $(document).ready(function() {
+
+    var removedImageIds = [];
+      Dropzone.autoDiscover = false;
+      var myDropzone = new Dropzone("#image-dropzone", {
+
+          url: " ", // Your server endpoint to handle image upload
+          maxFiles: 5, // Maximum number of files allowed
+          addRemoveLinks: true, // Show remove links on each image
+          acceptedFiles: 'image/*', // Accepted file types
+          dictDefaultMessage: "Drop or click to upload images", // Default message
+           thumbnailWidth: null,
+           thumbnailHeight:null,
+           resizeWidth: null,
+           resizeHeight:null,
+          // Additional Dropzone configurations or callbacks can be added here
+
+            init: function() {
+                    this.on("removedfile", function(file) {
+                    var removedImageId = file.customId;
+                    removedImageIds.push(removedImageId);
+                    $("#removedImageIds").val(removedImageIds.join(","));
+                    console.log("Removed image ID:", removedImageId);
+                    });
+                  }
+
+      });
+           <c:forEach var="image" items="${user.userImages}" varStatus="loop">
+               var imageId = ${image.id}; // Get the image ID from the userImages list
+               var base64Image = "${user.base64Images[loop.index]}";
+               var imageUrl = "data:image/jpeg;base64," + base64Image;
+               var mockFile = { name: "image", size: 12345, customId: imageId };
+               myDropzone.displayExistingFile(mockFile, imageUrl, "custom_" + imageId);
+               console.log("ids:_-", mockFile.customId);
+           </c:forEach>
+
+            document.getElementById("submit_form").addEventListener("click", function() {
+                        var new_images = [];
+                  $(".dropzone .dz-preview.new .dz-image img").each(function() {
+                      var imageSrc = $(this).attr("src");
+                      new_images.push(imageSrc);
+                  });
+
+                  // Add new images to hidden input fields
+                  var form = $("#edit_user_form");
+                  $.each(new_images, function(index, imageSrc) {
+                      var hiddenInput = $('<input type="hidden" name="images_new[]" value="' + imageSrc + '">');
+                      form.append(hiddenInput);
+                  });
+                  // Now, submit the form
+                  form.submit();
+              });
+
+              // Event listener for adding files to Dropzone
+              myDropzone.on("addedfile", function(file) {
+                  // Add a class to newly added files
+                  $(file.previewElement).addClass("new");
+              });
+
+                   });
+
+  </script>
+
 </body>
 </html>

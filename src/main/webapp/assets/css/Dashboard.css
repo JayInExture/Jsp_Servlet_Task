@@ -124,3 +124,20 @@ select {
     color: #fff;
     text-decoration: none;
 }
+
+.image-boxes {
+    display: flex;
+    /* width: 100%; */
+    /* height: 50vh; */
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.user-image {
+    /* width: 100%; */
+    max-width: 50%;
+    /* height: auto; */
+    margin: 10px;
+    border-radius: 0.95rem;
+    box-shadow: 0 0 50px rgb(0 204 255 / 66%);
+}

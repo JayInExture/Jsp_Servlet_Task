@@ -56,7 +56,7 @@ button.btn.btn-danger.delete-address {
     margin: 2% 0%;
 }
 
-form>div:last-child{
+.lst-btn{
     display: flex;
     justify-content: center;
 }
@@ -80,6 +80,45 @@ color:  red;
  }
 
 
+img.preview-image {
+    display: block;
+    max-width: 100%;
+        padding: 4%;
+}
+
+.image-wrapper .remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+        background-color: rgb(255 0 0 / 50%);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    cursor: pointer;
+    opacity: 0; /* Initially hide the X symbol */
+    transition: opacity 0.3s ease; /* Add transition for smooth animation */
+}
+
+.image-wrapper:hover .remove-image {
+    opacity: 1; /* Show the X symbol on hover */
+}
+
+
+.dropzone .dz-preview {
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    margin: 16px;
+    /* min-height: 100px; */
+}
+
+
+img {
+    width: 100%;
+    height: 100%;
+}
 
 
 

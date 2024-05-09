@@ -23,7 +23,6 @@ public class UserDao implements UserDaoInterface {
         DatabaseConnection D = DatabaseConnection.getInstance();
         connection = D.getConnection();
     }
-
     public void saveUser(userData user) {
         try {
             String userQuery = "INSERT INTO Users (first_name, last_name, email, password, user_type, date_of_birth, country, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -62,18 +61,78 @@ public class UserDao implements UserDaoInterface {
                     }
                     addressStatement.executeBatch();
                 }
+
+                // Insert images into the user_images table
+                String imageQuery = "INSERT INTO user_images (user_id, image) VALUES (?, ?)";
+                try (PreparedStatement imageStatement = connection.prepareStatement(imageQuery)) {
+                    for (byte[] image : user.getImages()) {
+                        imageStatement.setInt(1, userId);
+                        imageStatement.setBytes(2, image);
+                        imageStatement.addBatch();
+                    }
+                    int[] result = imageStatement.executeBatch();
+                    log.info("Number of images inserted: " + Arrays.stream(result).sum()); // Log the number of images inserted
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+          log.error(e);
             // Handle exception
         }
     }
+
+
+
+//    public void saveUser(userData user) {
+//        try {
+//            String userQuery = "INSERT INTO Users (first_name, last_name, email, password, user_type, date_of_birth, country, interests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+//            try (PreparedStatement userStatement = connection.prepareStatement(userQuery, PreparedStatement.RETURN_GENERATED_KEYS)) {
+//                userStatement.setString(1, user.getFirstName());
+//                userStatement.setString(2, user.getLastName());
+//                userStatement.setString(3, user.getEmail());
+//                userStatement.setString(4, user.getPassword());
+//                userStatement.setString(5, user.getUserType());
+//                userStatement.setString(6, user.getDateOfBirth()); // Insert date of birth
+//                userStatement.setString(7, user.getCountry()); // Insert country
+//                String interestsString = String.join(",", user.getInterests());
+//                userStatement.setString(8, interestsString); // Insert interests
+//                userStatement.executeUpdate();
+//
+//                // Retrieve the auto-generated user ID
+//                int userId;
+//                try (ResultSet generatedKeys = userStatement.getGeneratedKeys()) {
+//                    if (generatedKeys.next()) {
+//                        userId = generatedKeys.getInt(1);
+//                    } else {
+//                        throw new SQLException("Creating user failed, no ID obtained.");
+//                    }
+//                }
+//
+//                // Insert addresses into the Addresses table
+//                String addressQuery = "INSERT INTO Addresses (user_id, street, city, zip, state) VALUES (?, ?, ?, ?, ?)";
+//                try (PreparedStatement addressStatement = connection.prepareStatement(addressQuery)) {
+//                    for (Address address : user.getAddresses()) {
+//                        addressStatement.setInt(1, userId);
+//                        addressStatement.setString(2, address.getStreet());
+//                        addressStatement.setString(3, address.getCity());
+//                        addressStatement.setString(4, address.getZip());
+//                        addressStatement.setString(5, address.getState());
+//                        addressStatement.addBatch();
+//                    }
+//                    addressStatement.executeBatch();
+//                }
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//            // Handle exception
+//        }
+//    }
 
     public userData getUserByEmailAndPassword(HttpSession session, String email, String password) {
         try {
             String query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.user_type, u.date_of_birth, u.country, " +
                     "a.id AS address_id, a.street, a.city, a.zip, a.state " +
-                    "FROM Users u LEFT JOIN Addresses a ON u.id = a.user_id " +
+                    "FROM Users u " +
+                    "LEFT JOIN Addresses a ON u.id = a.user_id " +
                     "WHERE u.email=? AND u.password=?";
 
             try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -82,6 +141,8 @@ public class UserDao implements UserDaoInterface {
                 try (ResultSet resultSet = statement.executeQuery()) {
                     userData user = null;
                     List<Address> addresses = new ArrayList<>();
+                    List<byte[]> images = new ArrayList<>();  // List to store image data
+
                     while (resultSet.next()) {
                         if (user == null) {
                             int id = resultSet.getInt("id");
@@ -92,7 +153,7 @@ public class UserDao implements UserDaoInterface {
                             String fetchedDob = resultSet.getString("date_of_birth");
                             String fetchedcountry = resultSet.getString("country");
                             String fetchedUserType = resultSet.getString("user_type");
-                            user = new userData(id, firstName, lastName, fetchedEmail, fetchedPassword,fetchedDob,fetchedcountry, fetchedUserType);
+                            user = new userData(id, firstName, lastName, fetchedEmail, fetchedPassword, fetchedDob, fetchedcountry, fetchedUserType);
                         }
                         int addressId = resultSet.getInt("address_id"); // Fetch address ID
                         String street = resultSet.getString("street");
@@ -108,12 +169,23 @@ public class UserDao implements UserDaoInterface {
                         address.setState(state);
 
                         addresses.add(address);
-                        log.info(addressId);
-                        log.info(addresses);
                     }
 
                     if (user != null) {
+                        // Fetch images separately
+                        String imageQuery = "SELECT image FROM user_images WHERE user_id=?";
+                        try (PreparedStatement imageStatement = connection.prepareStatement(imageQuery)) {
+                            imageStatement.setInt(1, user.getId());
+                            try (ResultSet imageResultSet = imageStatement.executeQuery()) {
+                                while (imageResultSet.next()) {
+                                    byte[] imageData = imageResultSet.getBytes("image");
+                                    images.add(imageData);  // Add the byte array directly to the list
+                                }
+                            }
+                        }
+
                         user.setAddresses(addresses);
+                        user.setImages(images);  // Set the list of images in the userData object
                         session.setAttribute("user", user); // Set user in session
                     }
                     return user;
@@ -124,6 +196,8 @@ public class UserDao implements UserDaoInterface {
         }
         return null;
     }
+
+
 
 
     public boolean updatePasswordByEmailAndType(String email, String newPassword) {
@@ -274,7 +348,7 @@ public class UserDao implements UserDaoInterface {
         return user;
     }
 
-    public userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses,String DateOfBirth,String country,  List<String> interests) {
+    public userData upDateInfo(int userId, String firstName, String lastName, List<Address> addresses,String DateOfBirth,String country,  List<String> interests,  List<byte[]> images,List<String> removedImageIds) {
         userData user = getUserById(userId);
 
         if (user != null) {
@@ -283,7 +357,7 @@ public class UserDao implements UserDaoInterface {
 
                 // Update user's name if changed
                 if (!user.getFirstName().equals(firstName) || !user.getLastName().equals(lastName) || !user.getDateOfBirth().equals(DateOfBirth) || !user.getCountry().equals(country) || !user.getInterests().equals(interests)) {
-                    log.info("Updating user's name from " + user.getFirstName() + " " + user.getLastName() + " to " + firstName + " " + lastName,country, DateOfBirth, interests);
+                    log.info("Updating user's name from " + user.getFirstName() + " " + user.getLastName() + " to " + firstName + " " + lastName, country, DateOfBirth, interests);
                     String updateUserQuery = "UPDATE Users SET first_name = ?, last_name = ?, date_of_birth = ?, country = ?, interests = ? WHERE id = ?";
                     try (PreparedStatement updateUserStatement = connection.prepareStatement(updateUserQuery)) {
                         updateUserStatement.setString(1, firstName);
@@ -346,9 +420,40 @@ public class UserDao implements UserDaoInterface {
                     log.info("Deleting address with ID: " + addressId);
                     deleteAddress(addressId);
                 }
+
+                log.info("size...:-"+images.size());
+//                log.info("img idss...:-"+imageIds);
+//                 Insert new images into user_images table
+                for (int i = 0; i < images.size(); i++) {
+                    byte[] imageData = images.get(i);
+                    String insertImageQuery = "INSERT INTO user_images (user_id, image) VALUES (?, ?)";
+                    try (PreparedStatement insertImageStatement = connection.prepareStatement(insertImageQuery)) {
+                        insertImageStatement.setInt(1, userId);
+                        insertImageStatement.setBytes(2, imageData);
+                        insertImageStatement.executeUpdate();
+                    }
+                }
+
+log.info("removed:-"+removedImageIds);
+                for (String removedImageId : removedImageIds) {
+                    log.info("Deleting image with ID: " + removedImageId);
+                    String deleteImageQuery = "DELETE FROM user_images WHERE id = ?";
+                    try (PreparedStatement deleteImageStatement = connection.prepareStatement(deleteImageQuery)) {
+                        int imageId = Integer.parseInt(removedImageId);
+                        deleteImageStatement.setInt(1, imageId);
+                        deleteImageStatement.executeUpdate();
+                    } catch (NumberFormatException e) {
+                        // Handle invalid image ID format
+                        log.error("Invalid image ID format: " + removedImageId, e);
+                    } catch (SQLException e) {
+                        // Handle SQL exception
+                        log.error("Error deleting image with ID: " + removedImageId, e);
+                    }
+                }
+
+
+
             } catch (SQLException e) {
-                e.printStackTrace();
-                // Log the SQL exception
                 log.error("SQL error occurred while updating user info for user " + userId, e);
             }
         } else {
@@ -356,13 +461,19 @@ public class UserDao implements UserDaoInterface {
         }
         return user;
     }
-public boolean deleteUser(int userId) {
+
+    public boolean deleteUser(int userId) {
         try {
             // Delete user's addresses first
             String deleteAddressesQuery = "DELETE FROM Addresses WHERE user_id = ?";
             try (PreparedStatement deleteAddressesStatement = connection.prepareStatement(deleteAddressesQuery)) {
                 deleteAddressesStatement.setInt(1, userId);
                 deleteAddressesStatement.executeUpdate();
+            }
+            String deleteImgQuery = "DELETE FROM user_images WHERE user_id = ?";
+            try (PreparedStatement deleteImgStatement = connection.prepareStatement(deleteImgQuery)) {
+                deleteImgStatement.setInt(1, userId);
+                deleteImgStatement.executeUpdate();
             }
 
             // Then delete the user
@@ -431,8 +542,7 @@ public boolean deleteUser(int userId) {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            // Handle exception
+            log.error(e);
         }
         return addresses;
     }
@@ -457,7 +567,25 @@ public boolean deleteUser(int userId) {
         }
     }
 
-
-
-
+    @Override
+    public List<UserImage> getImagesByUserId(int userId) {
+        List<UserImage> images = new ArrayList<>();
+        String query = "SELECT id, image FROM user_images WHERE user_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int img_id = resultSet.getInt("id");
+                    log.info("Image id " + img_id);
+                    byte[] imageBytes = resultSet.getBytes("image");
+                    images.add(new UserImage(img_id, imageBytes)); // Create a new UserImage object with ID and byte data and add it to the list
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Error retrieving images for user ID " + userId + ": " + e.getMessage());
+        }
+        return images;
+    }
 }
+
+

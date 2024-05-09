@@ -1,5 +1,6 @@
 package model;
 
+import java.sql.Blob;
 import java.util.Date;
 import java.util.List;
 
@@ -17,6 +18,26 @@ public class userData {
 
     private List<Address> addresses;
     private String userType;
+    private List<byte[]> images;
+
+    private List<UserImage> userImages;
+    private List<String> base64Images;
+    public List<UserImage> getUserImages() {
+        return userImages;
+    }
+
+    public void setUserImages(List<UserImage> userImages) {
+        this.userImages = userImages;
+    }
+
+    public List<String> getBase64Images() {
+        return base64Images;
+    }
+
+    public void setBase64Images(List<String> base64Images) {
+        this.base64Images = base64Images;
+    }
+
 //    private int addressId;
 
 
@@ -140,6 +161,16 @@ public class userData {
     public void setInterests(List<String> interests) {
         this.interests = interests;
     }
+
+    public List<byte[]> getImages() {
+        return images;
+    }
+
+    public void setImages(List<byte[]> images) {
+        this.images = images;
+    }
+}
+
 //    public String getInterests() {
 //        return interests;
 //    }
@@ -155,7 +186,6 @@ public class userData {
 //    public void setAddressId(int addressId) {
 //        this.addressId = addressId;
 //    }
-}
 
 
 

@@ -30,17 +30,26 @@ public class LoginServlet extends HttpServlet {
             UserDaoInterface userDao = new UserDao();
             userData user = userDao.getUserByEmailAndPassword(request.getSession(), email, password);
 
+
             if (user != null) {
                 log.info("User logged in successfully: {}", user.getEmail());
-                // Add this line to log the user object
-                log.info("User details: {}", user);
+
+                // Encode only the images of the logged-in user to base64
+                List<byte[]> userImages = user.getImages();
+                List<String> base64Images = new ArrayList<>();
+                for (byte[] imageData : userImages) {
+                    String base64Image = Base64.getEncoder().encodeToString(imageData);
+                    base64Images.add(base64Image);
+                }
+                request.setAttribute("base64Images", base64Images);
+
+                // Check if the logged-in user is an admin
                 if (user.getUserType().equals("admin")) {
                     List<userData> users = userDao.getAllUsers();
                     request.setAttribute("users", users);
                 }
-                // Forward the request to Dashboard.jsp
-                response.sendRedirect("Dashboard.jsp");
-//                request.getRequestDispatcher("Dashboard.jsp").forward(request, response);
+//                response.sendRedirect("Dashboard.jsp");
+                request.getRequestDispatcher("Dashboard.jsp").forward(request, response);
             }
             else {
                 log.info("Invalid credentials for email: {}", email);

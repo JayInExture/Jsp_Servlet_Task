@@ -2,6 +2,8 @@ package util.impl;
 
 //import util.UserValidation;
 
+import jakarta.servlet.http.Part;
+
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -60,12 +62,12 @@ public class UserValidationImpl  {
             }
         }
         for (String zip : zips) {
-            if (zip == null || zip.isEmpty()) {
+            if (zip == null || zip.isEmpty() || !zip.matches("\\d{6}")) { // Ensure zip is a 6-digit number
                 return false;
             }
         }
         for (String state : states) {
-            if (state == null || state.isEmpty()) {
+            if (state == null || state.isEmpty() || state.matches(".*\\d+.*")) { // Ensure state does not contain any digits
                 return false;
             }
         }
@@ -73,5 +75,7 @@ public class UserValidationImpl  {
         return true;
     }
 
-
+    public boolean isImageUploaded(List<Part> imageParts) {
+        return imageParts != null && !imageParts.isEmpty();
+    }
 }

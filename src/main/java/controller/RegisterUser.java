@@ -1,25 +1,28 @@
 package controller;
-
 import dao.impl.UserDao;
 import dao.UserDaoInterface;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.annotation.*;
+import jakarta.servlet.http.*;
 import model.Address;
 import model.userData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import util.impl.UserValidationImpl;
 
+import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.*;
 
 @WebServlet("/register")
+@MultipartConfig(
+        maxFileSize = 20848820, // 20 MB in bytes
+        maxRequestSize = 418018841, // 400 MB in bytes
+        fileSizeThreshold = 1048576 // 1 MB in bytes
+)
 public class RegisterUser extends HttpServlet {
     private static final Logger Log = LogManager.getLogger(RegisterUser.class);
 
@@ -78,31 +81,6 @@ public class RegisterUser extends HttpServlet {
         }
 
 
-//        String alphaExp = "^[a-zA-Z ]*$";
-//        if (!firstName.matches(alphaExp)) {
-//            req.setAttribute("errorMessage", "First name must contain only alphabetic characters.");
-//            resp.sendRedirect("index.jsp");
-//        Log.info(req.getAttribute("errorMessage"));
-////            resp.sendRedirect("index.jsp?errorMessage=First name must contain only alphabetic characters.");
-//            return;
-//        }
-//
-//        if (!lastName.matches(alphaExp)) {
-//            req.setAttribute("errorMessage", "Last name must contain only alphabetic characters.");
-//            resp.sendRedirect("index.jsp");
-//            return;
-//        }
-//
-//        if((password.length() <=7)){
-//            resp.sendRedirect("index.jsp?error=passwordlengthTosort");
-//            return;
-//        }
-//        // Check if passwords match
-//        if (!password.equals(confirmPassword)) {
-//            resp.sendRedirect("index.jsp?error=passwordMismatch");
-//            return; // Stop further processing
-//        }
-
         List<Address> addresses = new ArrayList<>();
 
         // Loop through each address index and retrieve its corresponding fields
@@ -127,6 +105,47 @@ public class RegisterUser extends HttpServlet {
             addresses.add(address);
         }
 
+        List<Part> imageParts = req.getParts().stream()
+                .filter(part -> "images[]".equals(part.getName()) && part.getSize() > 0)
+                .toList();
+
+
+
+        // Check if any image is uploaded
+        if (!validation.isImageUploaded(imageParts)) {
+            resp.sendRedirect("index.jsp?error=imageRequired");
+            return;
+        }
+        List<byte[]> imageBytesList = new ArrayList<>();
+        for (Part part : imageParts) {
+            if (part.getSize() > 0) {
+                try {
+                    String base64Image = new String(part.getInputStream().readAllBytes());
+                    // Decode the Base64 string to byte array
+                    byte[] imageBytes = Base64.getDecoder().decode(base64Image.split(",")[1]);
+                    imageBytesList.add(imageBytes);
+                } catch (IOException e) {
+                    Log.error("Error processing image: " + e.getMessage());
+                }
+            }
+        }
+
+        Log.info("part:--"+imageParts.size());
+//        List<Part> imageParts = req.getParts().stream()
+//                .filter(part -> "images".equals(part.getName()) && part.getSize() > 0)
+//                .toList();
+//        List<byte[]> imageBytesList = new ArrayList<>();
+//        for (Part part : imageParts) {
+//            if (part.getSize() > 0) {
+//                try {
+//                    byte[] imageBytes = part.getInputStream().readAllBytes();
+//                    imageBytesList.add(imageBytes);
+//                } catch (IOException e) {
+//                    Log.error("Error processing image: " + e.getMessage());
+//                }
+//            }
+//        }
+
         // Create a user object and set its properties
         userData user = new userData();
         user.setFirstName(firstName);
@@ -138,6 +157,8 @@ public class RegisterUser extends HttpServlet {
         user.setCountry(country); // Set country
         user.setInterests(interestsList);
         user.setAddresses(addresses); // Set addresses
+        user.setImages(imageBytesList);
+
 
         // Save the user only if passwords match
         UserDaoInterface userDao = new UserDao();
@@ -148,7 +169,6 @@ public class RegisterUser extends HttpServlet {
             return; // Stop further processing
         }
         userDao.saveUser(user);
-//        userDao.closeConnection();
 
         HttpSession session = req.getSession(false);
         if (session != null && session.getAttribute("user") != null) {
@@ -161,7 +181,6 @@ public class RegisterUser extends HttpServlet {
                 return; // Stop further processing
             }
         }
-
 
         resp.sendRedirect("Login.jsp");
     }

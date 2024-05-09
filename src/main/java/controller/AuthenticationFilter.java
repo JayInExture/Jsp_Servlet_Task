@@ -9,10 +9,9 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebFilter({"/Dashboard.jsp","/editUser", "/deleteUser"})
+@WebFilter({"/Dashboard", "/editUser", "/deleteUser"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -24,28 +23,24 @@ public class AuthenticationFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        HttpSession session = httpRequest.getSession(false);
 
-        if (session != null && session.getAttribute("user") != null) {
+        // Prevent caching of sensitive pages
+        httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+        httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0
+        httpResponse.setHeader("Expires", "0"); // Proxies
+
+        // Check if the user is logged in
+        if (httpRequest.getSession(false) != null && httpRequest.getSession().getAttribute("user") != null) {
             // User is logged in, allow access to the requested page
-
-            // Prevent caching of sensitive pages
-            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-            httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0
-            httpResponse.setHeader("Expires", "0"); // Proxies
-
             chain.doFilter(request, response);
         } else {
             // User is not logged in, redirect to the login page
-
-            // Prevent caching of the login page
-            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-            httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0
-            httpResponse.setHeader("Expires", "0"); // Proxies
-
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/Login.jsp?error=unauthorized");
         }
     }
 
-
+    @Override
+    public void destroy() {
+        // Cleanup code, if needed
+    }
 }

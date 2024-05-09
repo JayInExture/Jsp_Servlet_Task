@@ -4,6 +4,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script type="text/javascript">
+        // Prevent caching of this page
+        function preventBack() {
+            window.history.forward();
+        }
+        setTimeout("preventBack()", 0);
+        window.onunload = function() { null };
+    </script>
     <meta charset="UTF-8">
     <title>User Dashboard</title>
     <link rel="stylesheet" type="text/css" href="./assets/css/Dashboard.css">
@@ -126,6 +134,14 @@
                 </c:forEach>
 
             </table>
+            <h2>Images</h2>
+            <div class="image-boxes">
+          <c:forEach var="base64Image" items="${base64Images}">
+              <img class="user-image" src="data:image/jpeg;base64,${base64Image}">
+          </c:forEach>
+            </div>
+
+
             </section>
         </c:otherwise>
     </c:choose>
